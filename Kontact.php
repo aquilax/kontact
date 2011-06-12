@@ -36,7 +36,7 @@ abstract class K_Input extends K_Field{
 
 }
 
-class K_Name extends K_Input{
+class K_name extends K_Input{
   
   protected $defaults = array(
     'name' => 'name',
@@ -50,7 +50,7 @@ class K_Name extends K_Input{
 
 }
 
-class K_Email extends K_Input{
+class K_email extends K_Input{
 
   protected $defaults = array(
     'name' => 'email',
@@ -64,7 +64,7 @@ class K_Email extends K_Input{
 
 }
 
-class K_Message extends K_Field{
+class K_message extends K_Field{
   
   protected $defaults = array(
     'name' => 'message',
@@ -118,17 +118,13 @@ class Kontact{
   }
 
   public function addField($type, $options = array()){
-    switch ($type){
-      case 'name': 
-        $this->fields[] = new K_Name($options);
-        break;
-      case 'email':
-        $this->fields[] = new K_Email($options);
-        break;
-      case 'message':
-        $this->fields[] = new K_Message($options);
-        break;
-      default: echo '<p class="error">'.$this->lang('Unknown field type').'</p>';  
+    $class_name = 'K_'.$type;
+    if (class_exists($class_name)){
+      $this->fields[] = new $class_name($options);
+      return TRUE;
+    } else {
+      echo '<p class="error">'.$this->lang('Unknown field type').'</p>';
+      return FALSE;
     }
   }
 
