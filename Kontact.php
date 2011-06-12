@@ -6,6 +6,7 @@ abstract class K_Field{
   protected $name = 'field_name';
   protected $caption = 'field_caption';
   protected $value = '';
+  protected $required = FALSE;
   
   abstract function render();
   abstract function validate();
@@ -18,7 +19,8 @@ abstract class K_Field{
   }
 
   protected function _label(){
-    echo '<label for="'.$this->name.'">'.htmlspecialchars($this->caption).'</label>';   
+    $req = $this->required?' <em class="required">*</em>':'';
+    echo '<label for="'.$this->name.'">'.htmlspecialchars($this->caption).'</label>'.$req.'<br />';   
   }
 
 }
@@ -42,9 +44,13 @@ class K_name extends K_Input{
     'name' => 'name',
     'caption' => 'Name',
     'field_type' => 'text',
+    'required' => TRUE,
   );
 
   public function validate(){
+    if (!$this->required){
+      return TRUE;
+    }
     return strlen($this->value) > 5;
   }
 
@@ -56,9 +62,13 @@ class K_email extends K_Input{
     'name' => 'email',
     'caption' => 'E-Mail',
     'field_type' => 'email',
+    'required' => TRUE,
   );
 
   public function validate(){
+    if (!$this->required){
+      return TRUE;
+    }
     return filter_var($this->value, FILTER_VALIDATE_EMAIL); 
   }
 
@@ -69,6 +79,7 @@ class K_message extends K_Field{
   protected $defaults = array(
     'name' => 'message',
     'caption' => 'Message',
+    'required' => TRUE,
   );
 
   public function render(){
@@ -79,6 +90,9 @@ class K_message extends K_Field{
   }
 
   public function validate(){
+    if (!$this->required){
+      return TRUE;
+    }
     return strlen($this->value) > 5;
   }
 
