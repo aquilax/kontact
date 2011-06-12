@@ -15,7 +15,7 @@ abstract class K_Field{
 
 }
 
-class K_Name extends K_Field{
+abstract class K_Input extends K_Field{
 
   public function render(){
     echo '<li>';      
@@ -23,8 +23,21 @@ class K_Name extends K_Field{
     printf('<input type="text" id="%s" name="%s" value="%s" />', $this->name, $this->name, $this->value);
     echo '</li>';
   }
+
+}
+
+class K_Name extends K_Input{
+  
   public function validate(){
-    return TRUE;
+    return strlen($this->value) > 5;
+  }
+
+}
+
+class K_Email extends K_Input{
+
+  public function validate(){
+    return filter_var($this->value, FILTER_VALIDATE_EMAIL); 
   }
 
 }
@@ -32,23 +45,43 @@ class K_Name extends K_Field{
 class Kontact{
 
   private $fields = array();
+  private $url;
   
-  private function _header(){
-    echo 'header';
+  public function __construct($url = FALSE){
+    $this->url = $url?$url:$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
   }
 
-  private function _buttons(){
-    echo 'buttons';
+  private function lang($string){
+    return $string;
   }
 
-  private function _footer(){
-    echo 'footer';
+  private function render_header(){
+    printf ('<form method="post" action="%s">', $this->url);
+  }
+  
+  private function render_fields(){
+    echo '<ul>';
+    foreach ($this->fields as $field){
+      $field->render();
+    }
+    echo '</ul>';
+  }
+
+  private function render_buttons(){
+    printf ('<input type="submit" name="submit" value="%s" />', $this->lang('Send'));
+  }
+
+  private function render_footer(){
+    echo '</form>';
   }
 
   public function addField($type){
     switch ($type){
       case 'name': 
         $this->fields[] = new K_Name();
+        break;
+      case 'email':
+        $this->fields[] = new K_Email();
         break;
       default: echo '<p class="error">'.$this->lang('Unknown field type').'</p>';  
     }
@@ -59,12 +92,10 @@ class Kontact{
       echo '<p class="error">'.$this->lang('No fields defined').'</p>';
       return FALSE;
     }
-    echo $this->_header();
-    foreach ($this->fields as $field){
-      $field->render();
-    }
-    echo $this->_buttons();
-    echo $this->_footer();
+    echo $this->render_header();
+    echo $this->render_fields();
+    echo $this->render_buttons();
+    echo $this->render_footer();
   }
 }
 
