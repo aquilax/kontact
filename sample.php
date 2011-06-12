@@ -8,6 +8,7 @@ require 'Kontact.php';
 $kontact = new Kontact();
 $kontact->addField('name');
 $kontact->addField('email');
+$kontact->addField('message');
 $kontact->render();
 
 ?>

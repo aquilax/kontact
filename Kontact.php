@@ -2,25 +2,35 @@
 
 abstract class K_Field{
   
+  protected $defaults = array();
   protected $name = 'field_name';
-  protected $label = 'field_label';
+  protected $caption = 'field_caption';
   protected $value = '';
   
   abstract function render();
   abstract function validate();
 
+  function __construct($options = array()){
+    $options = array_merge($this->defaults, $options);
+    foreach ($options as $key => $value){
+      $this->$key = $value;
+    }
+  }
+
   protected function _label(){
-    echo '<label for="'.$this->name.'">'.htmlspecialchars($this->label).'</label>';   
+    echo '<label for="'.$this->name.'">'.htmlspecialchars($this->caption).'</label>';   
   }
 
 }
 
 abstract class K_Input extends K_Field{
 
+  protected $field_type;
+
   public function render(){
     echo '<li>';      
     $this->_label();
-    printf('<input type="text" id="%s" name="%s" value="%s" />', $this->name, $this->name, $this->value);
+    printf('<input type="%s" id="%s" name="%s" value="%s" />', $this->field_type, $this->name, $this->name, $this->value);
     echo '</li>';
   }
 
@@ -28,6 +38,12 @@ abstract class K_Input extends K_Field{
 
 class K_Name extends K_Input{
   
+  protected $defaults = array(
+    'name' => 'name',
+    'caption' => 'Name',
+    'field_type' => 'text',
+  );
+
   public function validate(){
     return strlen($this->value) > 5;
   }
@@ -36,8 +52,34 @@ class K_Name extends K_Input{
 
 class K_Email extends K_Input{
 
+  protected $defaults = array(
+    'name' => 'email',
+    'caption' => 'E-Mail',
+    'field_type' => 'email',
+  );
+
   public function validate(){
     return filter_var($this->value, FILTER_VALIDATE_EMAIL); 
+  }
+
+}
+
+class K_Message extends K_Field{
+  
+  protected $defaults = array(
+    'name' => 'message',
+    'caption' => 'Message',
+  );
+
+  public function render(){
+    echo '<li>';
+    $this->_label();
+    printf('<textarea name="%s" id="%s">%s</textarea>', $this->name, $this->name, $this->value);
+    echo '</li>';
+  }
+
+  public function validate(){
+    return strlen($this->value) > 5;
   }
 
 }
@@ -75,13 +117,16 @@ class Kontact{
     echo '</form>';
   }
 
-  public function addField($type){
+  public function addField($type, $options = array()){
     switch ($type){
       case 'name': 
-        $this->fields[] = new K_Name();
+        $this->fields[] = new K_Name($options);
         break;
       case 'email':
-        $this->fields[] = new K_Email();
+        $this->fields[] = new K_Email($options);
+        break;
+      case 'message':
+        $this->fields[] = new K_Message($options);
         break;
       default: echo '<p class="error">'.$this->lang('Unknown field type').'</p>';  
     }
