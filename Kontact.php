@@ -7,7 +7,8 @@ abstract class K_Field{
   protected $caption = 'field_caption';
   protected $value = '';
   protected $required = FALSE;
-  
+  protected $error = '';
+
   abstract function render();
   abstract function validate();
 
@@ -51,7 +52,11 @@ class K_name extends K_Input{
     if (!$this->required){
       return TRUE;
     }
-    return strlen($this->value) > 5;
+    $valid = strlen($this->value) > 5;
+    if (!$valid){
+      $this->error = $lang('Error');
+    }
+    return $valid;
   }
 
 }
@@ -69,7 +74,11 @@ class K_email extends K_Input{
     if (!$this->required){
       return TRUE;
     }
-    return filter_var($this->value, FILTER_VALIDATE_EMAIL); 
+    $valid = filter_var($this->value, FILTER_VALIDATE_EMAIL); 
+    if (!$valid){
+      $this->error = $lang('Error');
+    }
+    return $valid;
   }
 
 }
@@ -93,7 +102,11 @@ class K_message extends K_Field{
     if (!$this->required){
       return TRUE;
     }
-    return strlen($this->value) > 5;
+    $valid = strlen($this->value) > 5;
+    if (!$valid){
+      $this->error = $lang('Error');
+    }
+    return $valid;
   }
 
 }
@@ -102,7 +115,8 @@ class Kontact{
 
   private $fields = array();
   private $url;
-  
+  private $data;
+
   public function __construct($url = FALSE){
     $this->url = $url?$url:$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
   }
@@ -114,7 +128,7 @@ class Kontact{
   private function render_header(){
     printf ('<form method="post" action="%s">', $this->url);
   }
-  
+
   private function render_fields(){
     echo '<ul>';
     foreach ($this->fields as $field){
@@ -131,6 +145,15 @@ class Kontact{
     echo '</form>';
   }
 
+  private function validate(){
+    $valid = TRUE;
+    foreach($this->fields as $field){
+      $fvalid = $field->validate();
+      $valid = $valid?$fvalid:$valid;
+    }
+    return $valid;
+  }
+
   public function addField($type, $options = array()){
     $class_name = 'K_'.$type;
     if (class_exists($class_name)){
@@ -143,6 +166,12 @@ class Kontact{
   }
 
   public function render(){
+    if (isset($_POST['submit'])){
+      $valid = $this->validate();
+      if ($valid){
+        $this->save($this->data);
+      }
+    }
     if (!$this->fields){
       echo '<p class="error">'.$this->lang('No fields defined').'</p>';
       return FALSE;
