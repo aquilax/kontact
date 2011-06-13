@@ -5,7 +5,7 @@
 
 require 'Kontact.php';
 
-$kontact = new Kontact();
+$kontact = new Kontact('bg');
 $kontact->addField('name');
 $kontact->addField('email');
 $kontact->addField('message');

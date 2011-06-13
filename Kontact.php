@@ -1,5 +1,31 @@
 <?php
 
+class K_Lang{
+
+  private $trans = array(
+    'bg' => array(
+      'Name' => 'Име',
+      'Message' => 'Съобщение',
+      'Send' => 'Изпращане',
+    ), 
+  );
+
+  private $language;
+  
+
+  function __construct($language = 'en'){
+    $this->language = $language;
+    return $this;
+  }
+
+  function __($string){
+    if (isset($this->trans[$this->language]) && isset($this->trans[$this->language][$string])){
+      return $this->trans[$this->language][$string];
+    }
+    return $string;  
+  }
+}
+
 abstract class K_Field{
   
   protected $defaults = array();
@@ -8,20 +34,37 @@ abstract class K_Field{
   protected $value = '';
   protected $required = FALSE;
   protected $error = '';
+  protected $lang = null;
 
   abstract function render();
   abstract function validate();
 
-  function __construct($options = array()){
+  function __construct(&$lang, $options = array()){
+    $this->lang = $lang;
     $options = array_merge($this->defaults, $options);
     foreach ($options as $key => $value){
       $this->$key = $value;
+    }
+    $this->value = $this->getPostDefault($this->name, $this->value);
+  }
+
+  protected function getPostDefault($name, $default = null){
+    if (isset($_POST[$name])){
+      return $_POST[$name];
+    } else {
+      return $default;
     }
   }
 
   protected function _label(){
     $req = $this->required?' <em class="required">*</em>':'';
-    echo '<label for="'.$this->name.'">'.htmlspecialchars($this->caption).'</label>'.$req.'<br />';   
+    echo '<label for="'.$this->name.'">'.htmlspecialchars($this->lang->__($this->caption)).'</label>'.$req.'<br />';   
+  }
+
+  protected function _error(){
+    if ($this->error){
+      echo '<p class="error">'.htmlspecialchars($this->error).'</p>';
+    }
   }
 
 }
@@ -34,6 +77,7 @@ abstract class K_Input extends K_Field{
     echo '<li>';      
     $this->_label();
     printf('<input type="%s" id="%s" name="%s" value="%s" />', $this->field_type, $this->name, $this->name, $this->value);
+    $this->_error();
     echo '</li>';
   }
 
@@ -49,12 +93,13 @@ class K_name extends K_Input{
   );
 
   public function validate(){
+    $this->value = trim($this->value);
     if (!$this->required){
       return TRUE;
     }
-    $valid = strlen($this->value) > 5;
+    $valid = strlen($this->value) > 3;
     if (!$valid){
-      $this->error = $lang('Error');
+      $this->error = $this->lang->__('Error: The name should be longer than 3 characters.');
     }
     return $valid;
   }
@@ -76,7 +121,7 @@ class K_email extends K_Input{
     }
     $valid = filter_var($this->value, FILTER_VALIDATE_EMAIL); 
     if (!$valid){
-      $this->error = $lang('Error');
+      $this->error = $this->lang->__('Error');
     }
     return $valid;
   }
@@ -95,6 +140,7 @@ class K_message extends K_Field{
     echo '<li>';
     $this->_label();
     printf('<textarea name="%s" id="%s">%s</textarea>', $this->name, $this->name, $this->value);
+    $this->_error();
     echo '</li>';
   }
 
@@ -104,7 +150,7 @@ class K_message extends K_Field{
     }
     $valid = strlen($this->value) > 5;
     if (!$valid){
-      $this->error = $lang('Error');
+      $this->error = $this->lang->__('Error');
     }
     return $valid;
   }
@@ -116,15 +162,13 @@ class Kontact{
   private $fields = array();
   private $url;
   private $data;
+  private $lang = null;
 
-  public function __construct($url = FALSE){
-    $this->url = $url?$url:$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
+  public function __construct($language = 'en', $url = FALSE){
+    $this->url = $url?$url:'http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
+    $this->lang = new K_Lang($language);
   }
-
-  private function lang($string){
-    return $string;
-  }
-
+  
   private function render_header(){
     printf ('<form method="post" action="%s">', $this->url);
   }
@@ -138,7 +182,7 @@ class Kontact{
   }
 
   private function render_buttons(){
-    printf ('<input type="submit" name="submit" value="%s" />', $this->lang('Send'));
+    printf ('<input type="submit" name="submit" value="%s" />', $this->lang->__('Send'));
   }
 
   private function render_footer(){
@@ -157,7 +201,7 @@ class Kontact{
   public function addField($type, $options = array()){
     $class_name = 'K_'.$type;
     if (class_exists($class_name)){
-      $this->fields[] = new $class_name($options);
+      $this->fields[] = new $class_name($this->lang, $options);
       return TRUE;
     } else {
       echo '<p class="error">'.$this->lang('Unknown field type').'</p>';
